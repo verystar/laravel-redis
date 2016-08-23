@@ -62,7 +62,7 @@ All options are optional, you can specify an empty array to get the default conn
 ```
 'redis' => array(
 
-    'cluster' => true, // if true a RedisArray will be created
+    'cluster' => true, // if true a RedisCluster will be created
 
     'default' => array(
         'host'       => '127.0.0.1', // default: '127.0.0.1'
