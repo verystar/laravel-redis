@@ -5,7 +5,7 @@ Use phpredis as the redis connection in Laravel, support retry connection
 Requirements
 ------------
 
- - PHP 5.3+
+ - PHP 5.5.9+
  - [PhpRedis]
  - Laravel 5.2.x
 
