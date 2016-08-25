@@ -1,20 +1,29 @@
 {
-    "name": "very/laravel-phpredis",
-    "description": "Use phpredis as the redis connection in Laravel",
-    "keywords": [ "laravel", "redis", "phpredis" ],
-    "license": "Apache",
-    "authors": [
-        {
-            "name": "Xudong Cai",
-            "email": "caixudong@verystar.cn"
-        }
-    ],
-    "require": {
-        "ext-redis": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "Very\\": "src/Very"
-        }
+  "name": "very/laravel-phpredis",
+  "description": "Use phpredis as the redis connection in Laravel",
+  "keywords": [
+    "laravel",
+    "redis",
+    "phpredis"
+  ],
+  "license": "Apache",
+  "authors": [
+    {
+      "name": "Xudong Cai",
+      "email": "caixudong@verystar.cn"
     }
+  ],
+  "require": {
+    "ext-redis": "*"
+  },
+  "require-dev": {
+    "illuminate/contracts": "5.2.*|5.3.*",
+    "illuminate/support": "5.2.*|5.3.*",
+    "illuminate/redis": "5.2.*|5.3.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Very\\": "src/Very"
+    }
+  }
 }
