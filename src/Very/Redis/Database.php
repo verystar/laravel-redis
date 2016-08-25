@@ -2,14 +2,13 @@
 
 namespace Very\Redis;
 
-use Closure;
 use Redis;
 use RedisCluster;
 use InvalidArgumentException;
 use Illuminate\Support\Arr;
-use Illuminate\Contracts\Redis\Database as DatabaseContract;
+use Illuminate\Redis\Database as IlluminateRedis;
 
-class Database implements DatabaseContract
+class Database extends IlluminateRedis
 {
     /**
      * The host address of the database.
@@ -31,51 +30,65 @@ class Database implements DatabaseContract
      */
     public function __construct(array $servers = [])
     {
+        parent::__construct($servers);
         $this->cluster = Arr::pull($servers, 'cluster');
         $this->options = (array)Arr::pull($servers, 'options');
         $this->servers = $servers;
-
-        if ($this->cluster) {
-            $this->clients = $this->createAggregateClient($this->servers, $this->options);
-        }
     }
 
 
     /**
      * Create a new aggregate client supporting sharding.
      *
-     * @param  array  $servers
-     * @param  array  $options
+     * @param  array $servers
+     * @param  array $options
+     *
      * @return array
      */
     protected function createAggregateClient(array $servers, array $options = [])
     {
-        $servers = array_map([$this, 'buildClusterSeed'], $servers);
-        $timeout = empty($options['timeout']) ? 0 : $options['timeout'];
+        $servers    = array_map([$this, 'buildClusterSeed'], $servers);
+        $timeout    = empty($options['timeout']) ? 0 : $options['timeout'];
         $persistent = isset($options['persistent']) && $options['persistent'];
-        return ['default' => new RedisCluster(
-            null, array_values($servers), $timeout, null, $persistent
-        )];
+        return [
+            'default' => new RedisCluster(
+                null, array_values($servers), $timeout, null, $persistent
+            )
+        ];
     }
 
     /**
      * Build a cluster seed string.
      *
-     * @param  array  $server
+     * @param  array $server
+     *
      * @return string
      */
     protected function buildClusterSeed($server)
     {
         $parameters = [];
         foreach (['database', 'timeout', 'prefix'] as $parameter) {
-            if (! empty($server[$parameter])) {
+            if (!empty($server[$parameter])) {
                 $parameters[$parameter] = $server[$parameter];
             }
         }
-        if (! empty($server['password'])) {
+        if (!empty($server['password'])) {
             $parameters['auth'] = $server['password'];
         }
-        return $server['host'].':'.$server['port'].'?'.http_build_query($parameters);
+        return $server['host'] . ':' . $server['port'] . '?' . http_build_query($parameters);
+    }
+
+    /**
+     * Just becouse cover
+     *
+     * @param array $server
+     * @param array $options
+     *
+     * @return array
+     */
+    protected function createSingleClients(array $server, array $options = [])
+    {
+        return [];
     }
 
     /**
@@ -86,9 +99,9 @@ class Database implements DatabaseContract
      *
      * @return array
      */
-    protected function createSingleClients(array $server, array $options = [])
+    protected function createSingleClient(array $server, array $options = [])
     {
-        $redis = new Redis();
+        $redis   = new Redis();
         $timeout = empty($server['timeout']) ? 0 : $server['timeout'];
 
         if (isset($server['persistent']) && $server['persistent']) {
@@ -142,7 +155,7 @@ class Database implements DatabaseContract
                 if (!isset($this->servers[$name])) {
                     throw new InvalidArgumentException("Redis server [$name] not found.");
                 }
-                $this->clients[$name] = $this->createSingleClients($this->servers[$name], $this->options);
+                $this->clients[$name] = $this->createSingleClient($this->servers[$name], $this->options);
             }
             $this->currrent_server = $name;
             return $this;
@@ -176,45 +189,6 @@ class Database implements DatabaseContract
     public function command($method, array $parameters = [])
     {
         return call_user_func_array([$this->clients[$this->currrent_server], $method], $parameters);
-    }
-
-    /**
-     * Subscribe to a set of given channels for messages.
-     *
-     * @param  array|string $channels
-     * @param  \Closure     $callback
-     * @param  string       $connection
-     * @param  string       $method
-     *
-     * @return void
-     */
-    public function subscribe($channels, Closure $callback, $connection = null, $method = 'subscribe')
-    {
-        $loop = $this->connection($connection)->pubSubLoop();
-
-        call_user_func_array([$loop, $method], (array)$channels);
-
-        foreach ($loop as $message) {
-            if ($message->kind === 'message' || $message->kind === 'pmessage') {
-                call_user_func($callback, $message->payload, $message->channel);
-            }
-        }
-
-        unset($loop);
-    }
-
-    /**
-     * Subscribe to a set of given channels with wildcards.
-     *
-     * @param  array|string $channels
-     * @param  \Closure     $callback
-     * @param  string       $connection
-     *
-     * @return void
-     */
-    public function psubscribe($channels, Closure $callback, $connection = null)
-    {
-        return $this->subscribe($channels, $callback, $connection, __FUNCTION__);
     }
 
     /**
