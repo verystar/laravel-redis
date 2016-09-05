@@ -231,6 +231,12 @@ class Database implements DatabaseContract
         for ($i = 0; $i < 2; ++$i) {
             try {
                 $ret = $this->command($method, $parameters);
+
+                //fix laravel Cache/Repository/has function
+                if (strtolower($method) === 'get' && $ret === false) {
+                    $ret = null;
+                }
+
             } catch (\RedisException $e) {
                 logger()->error('Redis execute error:' . $e->getMessage(), $this->servers[$this->currrent_server]);
                 if ($this->isConnectionLost($e)) {
