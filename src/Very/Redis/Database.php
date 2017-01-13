@@ -158,7 +158,9 @@ class Database implements DatabaseContract
      */
     private function isConnectionLost(\RedisException $e)
     {
-        if (strpos($e->getMessage(), 'Redis server went away') !== false || strpos($e->getMessage(), 'Connection lost') !== false) {
+        if (strpos($e->getMessage(), 'Redis server went away') !== false || strpos($e->getMessage(), 'Connection lost') !== false || strpos($e->getMessage(),
+                  'read error on connection') !== false
+          ) {
             return true;
         }
 
